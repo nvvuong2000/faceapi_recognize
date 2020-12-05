@@ -6,6 +6,16 @@ const app = express()
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
+var cors = require('cors');
+const { Pool, Client } = require('pg')
+const pool = new Pool({
+  user: 'postgres',
+  host: 'localhost',
+  database: 'students',
+  password: '2020Vuo#',
+  port: 5432,
+})
+
 
 const viewsDir = path.join(__dirname, 'views')
 app.use(express.static(viewsDir))
@@ -34,6 +44,135 @@ app.get('/bbt_face_recognition', (req, res) => res.sendFile(path.join(viewsDir, 
 app.get('/batch_face_landmarks', (req, res) => res.sendFile(path.join(viewsDir, 'batchFaceLandmarks.html')))
 app.get('/batch_face_recognition', (req, res) => res.sendFile(path.join(viewsDir, 'batchFaceRecognition.html')))
 
+
+
+var bodyParser = require('body-parser')
+
+
+
+
+var http = require('http');
+var util = require('util')
+// http.createServer(function (req, res) {
+
+//   console.log('Request received: ');
+//   // util.log(util.inspect(req)) // this line helps you inspect the request so you can see whether the data is in the url (GET) or the req body (POST)
+//   util.log(req);
+//   util.log(req.body);
+//   // util.log('Request recieved: \nmethod: ' + req.method + '\nurl: ' + req.url) // this line logs just the method and url
+
+//   res.writeHead(200, { 'Content-Type': 'text/plain' });
+//   req.on('data', function (chunk) {
+//     console.log('GOT DATA!');
+//   });
+//   res.end('callback(\'{\"msg\": \"OK\"}\')');
+
+// }).listen(880);
+// console.log('Server running on port 8080');
+// console.log('Server running at http://192.168.0.143:8080/');
+app.post("/getInfo", (req, res) => {
+  // console.log(req.body.data);
+  console.log(req.body);
+  // console.log(req.body.result[0].time);
+  var gio_vao_lop = req.body.data[0].time;
+  var day_in_class = req.body.data[0].day
+  console.log('ngay' + day_in_class);
+  var gio_bat_dau = ''
+  var gio_ket_thuc = ''
+  var gio_limit = ''
+  // let limit = `select ${req.body.data2[0].time} + (20 || ' minutes'):: interval`
+  // var sql1 = 
+  var sql = `select ds.id_subject ,ds.begin1, ds.end1 from subjects s inner join details_subject ds on s.id = ds.id_subject where date_part('dow',current_date) = day_of_week and ((ds.begin1 < '${gio_vao_lop}')and '${gio_vao_lop}'<=ds.end1)  `
+  console.log(`select ds.id_subject, ds.begin1, ds.end1 from subjects s inner join details_subject ds on s.id = ds.id_subject where date_part('dow', current_date) = day_of_week and((ds.begin1 < '${gio_vao_lop}')and '${gio_vao_lop}' <= ds.end1)  `)
+  // var issueID;
+  pool.query(sql, function (err, result) {
+    if (err) {
+      console.log("error in tracking");
+    }
+    console.log('r nè:' + result.rows[0]['begin1'])
+    // console.log('r nè:' + result.rows[0].time)
+    gio_bat_dau = result.rows[0]['begin1']
+    gio_ket_thuc = result.rows[0]['end1']
+    var id_mon_hoc = result.rows[0]['id_subject']
+    console.log(id_mon_hoc);
+    // console.log(select * from current_date();)1
+    console.log(gio_bat_dau)
+    console.log('gio bat dau ne ' + gio_bat_dau)
+    pool.query(`select '${gio_bat_dau}' + (20 || 'minutes'):: interval limit1`, function (err, result) {
+      if (err) {
+        console.log(err);
+      }
+      console.log(result.rows[0].limit1);
+      h = JSON.stringify(result.rows[0].limit1.hours);
+      m = JSON.stringify(result.rows[0].limit1.minutes);
+      s = JSON.stringify(result.rows[0].limit1.seconds);
+      console.log('s ne' + s)
+      if (h < 10) {
+        gio_limit = '0' + h + ':' + m + ':' + '00';
+      }
+      else{
+        gio_limit = h + ':' + m+ ':' + '00';
+      }
+
+      var type = 0;
+      console.log(gio_vao_lop)
+      console.log(gio_bat_dau)
+      console.log(gio_limit)
+      if (gio_vao_lop <= gio_bat_dau) {
+        type = 0
+      }
+      else if (gio_bat_dau < gio_vao_lop && gio_vao_lop <= gio_limit) {
+        type = 1
+      }
+      else if (gio_vao_lop >= gio_limit) {
+        type = 2
+      }
+      console.log(type)
+      pool.query(`select '${gio_bat_dau}' + (20 || 'minutes'):: interval limit1`, function (err, result) {
+        // pool.query(`select * from current_date`, function (err, result) {
+        //     // console.log()
+        //     var date_in_class = ((result.rows[0].current_date))
+        //     console.log(date_in_class)
+
+        // })
+        var re = `insert into attent_class(id_student,id_subject,time_in_class,status) values`
+        var r = req.body
+        var lastIndex = [Object.keys(r.data).length - 1];
+        r.data.map((values, index) => {
+          var char = (index == lastIndex) ? ';' : ',';
+          re += `(${values['id']},'${id_mon_hoc}','${gio_vao_lop}',${type})${char}`;
+
+
+
+        })
+        console.log(re);
+        pool.query(re, (error, response) => {
+          if (error) {
+            // console.log(đc);
+            console.log(error)
+          }
+          else {
+            console.log('Taochi tiet tahnh cong')
+
+
+
+          }
+        });
+
+        console.log(r);
+        if (err) {
+          console.log(err);
+        }
+      });
+    })
+
+
+});
+})
+
+
+
+
 app.post('/fetch_external_image', async (req, res) => {
   const { imageUrl } = req.body
   if (!imageUrl) {
@@ -48,10 +187,10 @@ app.post('/fetch_external_image', async (req, res) => {
   }
 })
 
-app.listen(3000, () => console.log('Listening on port 3000!'))
+app.listen(4000, () => console.log('Listening on port 4000!'))
 
 function request(url, returnBuffer = true, timeout = 10000) {
-  return new Promise(function(resolve, reject) {
+  return new Promise(function (resolve, reject) {
     const options = Object.assign(
       {},
       {
@@ -65,7 +204,7 @@ function request(url, returnBuffer = true, timeout = 10000) {
       returnBuffer ? { encoding: null } : {}
     )
 
-    get(options, function(err, res) {
+    get(options, function (err, res) {
       if (err) return reject(err)
       return resolve(res)
     })

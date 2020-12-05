@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <script src="face-api.js"></script>
   <script src="js/commons.js"></script>
@@ -9,6 +10,7 @@
   <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
 </head>
+
 <body>
   <div id="navbar"></div>
   <div class="center-content page-container">
@@ -20,17 +22,23 @@
       <video onloadedmetadata="onPlay(this)" id="inputVideo" autoplay muted playsinline></video>
       <canvas id="overlay" />
     </div>
+    <div id="screenshot">
+      <img src="" style="display: none">
+    </div>
+    <div id="results">
+
+    </div>
 
     <div class="row side-by-side">
 
       <!-- face_detector_selection_control -->
-      <div id="face_detector_selection_control" class="row input-field" style="margin-right: 20px;">
+      <!-- <div id="face_detector_selection_control" class="row input-field" style="margin-right: 20px;">
         <select id="selectFaceDetector">
           <option value="ssd_mobilenetv1">SSD Mobilenet V1</option>
           <option value="tiny_face_detector">Tiny Face Detector</option>
         </select>
         <label>Select Face Detector</label>
-      </div>
+      </div> -->
       <!-- face_detector_selection_control -->
 
       <!-- fps_meter -->
@@ -48,30 +56,24 @@
 
 
     <!-- ssd_mobilenetv1_controls -->
-    <span id="ssd_mobilenetv1_controls">
+    <!-- <span id="ssd_mobilenetv1_controls">
       <div class="row side-by-side">
         <div class="row">
           <label for="minConfidence">Min Confidence:</label>
           <input disabled value="0.5" id="minConfidence" type="text" class="bold">
         </div>
-        <button
-          class="waves-effect waves-light btn"
-          onclick="onDecreaseMinConfidence()"
-        >
+        <button class="waves-effect waves-light btn" onclick="onDecreaseMinConfidence()">
           <i class="material-icons left">-</i>
         </button>
-        <button
-          class="waves-effect waves-light btn"
-          onclick="onIncreaseMinConfidence()"
-        >
+        <button class="waves-effect waves-light btn" onclick="onIncreaseMinConfidence()">
           <i class="material-icons left">+</i>
         </button>
       </div>
-    </span>
+    </span> -->
     <!-- ssd_mobilenetv1_controls -->
 
     <!-- tiny_face_detector_controls -->
-    <span id="tiny_face_detector_controls">
+    <!-- <span id="tiny_face_detector_controls">
       <div class="row side-by-side">
         <div class="row input-field" style="margin-right: 20px;">
           <select id="inputSize">
@@ -90,77 +92,293 @@
           <label for="scoreThreshold">Score Threshold:</label>
           <input disabled value="0.5" id="scoreThreshold" type="text" class="bold">
         </div>
-        <button
-          class="waves-effect waves-light btn"
-          onclick="onDecreaseScoreThreshold()"
-        >
+        <button class="waves-effect waves-light btn" onclick="onDecreaseScoreThreshold()">
           <i class="material-icons left">-</i>
         </button>
-        <button
-          class="waves-effect waves-light btn"
-          onclick="onIncreaseScoreThreshold()"
-        >
+        <button class="waves-effect waves-light btn" onclick="onIncreaseScoreThreshold()">
           <i class="material-icons left">+</i>
         </button>
       </div>
-    </span>
+    </span> -->
     <!-- tiny_face_detector_controls -->
 
-  </body>
-
-  <script>
-    let forwardTimes = []
-
-    function updateTimeStats(timeInMs) {
-      forwardTimes = [timeInMs].concat(forwardTimes).slice(0, 30)
-      const avgTimeInMs = forwardTimes.reduce((total, t) => total + t) / forwardTimes.length
-      $('#time').val(`${Math.round(avgTimeInMs)} ms`)
-      $('#fps').val(`${faceapi.utils.round(1000 / avgTimeInMs)}`)
-    }
-
-    async function onPlay() {
-      const videoEl = $('#inputVideo').get(0)
-
-      if(videoEl.paused || videoEl.ended || !isFaceDetectionModelLoaded())
-        return setTimeout(() => onPlay())
-
-
-      const options = getFaceDetectorOptions()
-
-      const ts = Date.now()
-
-      const result = await faceapi.detectSingleFace(videoEl, options)
-
-      updateTimeStats(Date.now() - ts)
-
-      if (result) {
-        const canvas = $('#overlay').get(0)
-        const dims = faceapi.matchDimensions(canvas, videoEl, true)
-        faceapi.draw.drawDetections(canvas, faceapi.resizeResults(result, dims))
-      }
-
-      setTimeout(() => onPlay())
-    }
-
-    async function run() {
-      // load face detection model
-      await changeFaceDetector(TINY_FACE_DETECTOR)
-      changeInputSize(128)
-
-      // try to access users webcam and stream the images
-      // to the video element
-      const stream = await navigator.mediaDevices.getUserMedia({ video: {} })
-      const videoEl = $('#inputVideo').get(0)
-      videoEl.srcObject = stream
-    }
-
-    function updateResults() {}
-
-    $(document).ready(function() {
-      renderNavBar('#navbar', 'webcam_face_detection')
-      initFaceDetectionControls()
-      run()
-    })
-  </script>
 </body>
+
+<script>
+  let forwardTimes = []
+
+  function updateTimeStats(timeInMs) {
+    forwardTimes = [timeInMs].concat(forwardTimes).slice(0, 30)
+    const avgTimeInMs = forwardTimes.reduce((total, t) => total + t) / forwardTimes.length
+    $('#time').val(`${Math.round(avgTimeInMs)} ms`)
+    $('#fps').val(`${faceapi.utils.round(1000 / avgTimeInMs)}`)
+  }
+
+  async function onPlay() {
+    const videoEl = $('#inputVideo').get(0)
+
+    if (videoEl.paused || videoEl.ended || !isFaceDetectionModelLoaded())
+      return setTimeout(() => onPlay())
+
+
+    const options = getFaceDetectorOptions()
+
+    const ts = Date.now()
+
+    const result = await faceapi.detectSingleFace(videoEl, options)
+
+    updateTimeStats(Date.now() - ts)
+
+    if (result) {
+      const canvas = $('#overlay').get(0)
+      const dims = faceapi.matchDimensions(canvas, videoEl, true)
+      faceapi.draw.drawDetections(canvas, faceapi.resizeResults(result, dims))
+    }
+
+    setTimeout(() => onPlay())
+  }
+
+  function b64toBlob(dataURI) {
+
+    var byteString = atob(dataURI.split(',')[1]);
+    var ab = new ArrayBuffer(byteString.length);
+    var ia = new Uint8Array(ab);
+
+    for (var i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([ab], {
+      type: 'image/png'
+    });
+  }
+  async function run() {
+    // load face detection model
+    await changeFaceDetector(TINY_FACE_DETECTOR)
+    changeInputSize(128)
+
+    // try to access users webcam and stream the images
+    // to the video element
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {}
+    })
+    const videoEl = $('#inputVideo').get(0)
+    videoEl.srcObject = stream
+  }
+
+
+
+
+  // Tìm khuôn mặt giống nhất trong Person Group (Face Recognition)
+  const identify = async (faceIds) => {
+    console.log(`Begin to identity face.`);
+    let groupId = 'khmt13a';
+    const result = await $.ajax({
+      method: 'POST',
+      async: true,
+      url: "https://f8s.cognitiveservices.azure.com/face/v1.0/identify",
+      contentType: "application/json",
+      headers: {
+        'Ocp-Apim-Subscription-Key': '8d9cc9c8c6e24350b8f93a0646619c68'
+      },
+      // data: JSON.stringify({
+      //   "personGroupId": 'khmt13a',
+      //   "faceIds": ['7f38fac7-019f-4acf-841c-4f9416bad904'],
+      //   // "maxNumOfCandidatesReturned": 1,
+      //   // "confidenceThreshold": 0.5
+      // })
+      data: JSON.stringify({
+        "personGroupId": 'khmt13a',
+        "faceIds": faceIds,
+      })
+    })
+    return result;
+
+
+    // if (res.statusCode == 200) {
+    //   console.log(`Finish identity face.`);
+    //   return JSON.parse(res.getBody('utf8'));
+    // } else {
+    //   console.log('Error');
+    //   console.log(res.getBody('utf8'));
+    // }
+  }
+
+  async function Hello() {
+    const result = await $.ajax({
+      method: 'GET',
+      url: " https://5f408bb7a5e9db0016301e91.mockapi.io/test/idol-person",
+      contentType: "application/json",
+    })
+    return result;
+
+
+    // $("#results").text(JSON.stringify(data));
+
+    // https://5f408bb7a5e9db0016301e91.mockapi.io/test/:endpoint
+  }
+
+  // Nhận diện vị trí khuôn mặt và tên idol từ URL ảnh
+  const video1 = document.getElementById('inputVideo')
+  var _selectIndex = 0;
+  video1.addEventListener('play', () => {
+
+    const canvas = faceapi.createCanvasFromMedia(video1)
+    canvas.setAttribute("id", _selectIndex++);
+    document.body.append(canvas)
+    const displaySize = {
+      width: video1.width,
+      height: video1.height
+    }
+    // console.log(displaySize);
+    var canvas2 = document.getElementById("0");
+    console.log(canvas2);
+    var dataURL = canvas2.toDataURL('image/jpeg');
+    console.log(dataURL);
+    fetch(dataURL)
+      .then(async res => await res.blob())
+      .then(async blobData => {
+        $.ajax({
+            async: false, // meow pjt
+            method: 'POST',
+            url: "https://f8s.cognitiveservices.azure.com/face/v1.0/detect?returnFaceId=true&returnFaceLandmarks=false&recognitionModel=recognition_01&returnRecognitionModel=true&detectionModel=detection_02",
+            contentType: "application/octet-stream",
+            headers: {
+              'Ocp-Apim-Subscription-Key': '8d9cc9c8c6e24350b8f93a0646619c68'
+            },
+            processData: false,
+            data: blobData,
+          })
+          .done((data) => {
+
+
+            var identifiedResult;
+            (async function () {
+              identifiedResult = await identify(data.map(face => face.faceId));
+              person = await Hello();
+              console.log(identifiedResult)
+
+              // var allIdols = identifiedResult.map(result => {
+
+              // Sau khi đã phát hiện các khuôn mặt,
+              // So sánh chúng với mặt đã có trong person group
+
+
+
+              var allIdols = identifiedResult.map(result => {
+                console.log(result)
+                let d = new Date();
+                // d is "Sun Oct 13 2013 20:32:01 GMT+0530 (India Standard Time)"
+                let datetext = d.toTimeString();
+                // datestring is "20:32:01 GMT+0530 (India Standard Time)"
+                // Split with ' ' and we get: ["20:32:01", "GMT+0530", "(India", "Standard", "Time)"]
+                // Take the first value from array :)
+                datetext = datetext.split(' ')[0];
+                var today = new Date();
+                var date1 = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today
+                  .getDate();
+
+                // Lấy vị trí khuôn mặt trong ảnh để hiển thị
+                // result.face = person.filter(face => face.faceId == result.faceId)[0].faceRectangle;
+
+                // Tìm idol đã được nhận diện từ DB
+                if (result.candidates.length > 0) {
+
+                  // Kết quả chỉ trả về ID, dựa vào ID này ta tìm tên của idol
+                  var idolId = result.candidates[0].personId;
+                  console.log(idolId)
+                  var idol = person.filter(person => person.personId == idolId)[0];
+                  result.idol = {
+                    id: idol.userData,
+                    name: idol.name,
+                    time: datetext,
+                    day1: date1
+                  };
+                } else {
+                  result.idol = {
+                    id: 0,
+                    name: 'Unknown'
+                  }
+                }
+                return result;
+              });
+              var data1 = [];
+              allIdols.map((data) => {
+                data1.push({
+                  id: data.idol.id,
+                  name: data.idol.name,
+                  time: data.idol.time,
+                  day: data.idol.day1
+                })
+              })
+              var result = data1.filter(student => student.id !== 0)
+              console.log(result);
+              // console.log(`Finish recognize image:`);
+              // console.log(allIdols);
+              if (result.length > 0) {
+                $.ajax({
+                  method: 'POST',
+                  url: 'http://localhost:4000/getInfo',
+                  // contentType: "application/json",
+                  data: {
+                    'data': result,
+                    // 'country': 'India',
+                  },
+                  success: function (data) {
+                    console.log(data);
+                  }
+
+                });
+              }
+
+
+
+
+
+              return result;
+            })();
+          });
+
+
+        // async function Hi (){
+
+        // }
+        // var identifiedResult = identifiedResult.responseJSON;
+        // console.log(identifiedResult);
+
+        // var allIdols = identifiedResult.map(result => {
+
+
+      });
+
+    // console.log(`Finish recognize image: ${imageUrl}`);
+    // return allIdols;
+
+  })
+
+  // });
+
+  // })
+
+  function updateResults() {}
+
+  $(document).ready(function () {
+    renderNavBar('#navbar', 'webcam_face_detection')
+    initFaceDetectionControls()
+    run()
+  })
+  //  if (resizedDetections.length > 0 && resizedDetections[0].detection.score > 0.7 &&
+  //  resizedDetections[0].expressions.happy > 0.5) {
+  //  const canvas = document.createElement('canvas');
+  //  canvas.width = video.videoWidth;
+  //  canvas.height = video.videoHeight;
+  //  canvas.getContext('2d').drawImage(video, 0, 0);
+
+  //  const img = document.createElement("img");
+  //  img.src = canvas.toDataURL('image/webp');
+
+  //  document.getElementById('screenshot').appendChild(img)
+  //  }
+</script>
+</body>
+
 </html>
